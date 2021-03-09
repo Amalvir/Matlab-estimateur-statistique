@@ -47,7 +47,7 @@ title('Moyennes et écart-types des y')
 xlabel('K réalisations')
 ylabel('(m/s)')
 legend('Moyennes','Écart-types')
-% 2.Estimateur
+%--- 2. Estimateur ---%
 
 [alpha_est,BRC] = estimateur_mv(Y,theta,param,N);
 disp(['BRC = ', num2str(BRC)])
@@ -56,7 +56,7 @@ disp(['Variance = ', num2str(var(alpha_est))])
 disp(['moyenne exacte = ', num2str(theta^param)])
 disp(['Variance exacte = ', num2str(theta^param^2/N)])
 
-% 3. Détection
+% --- 3. Détection --- %
 % 3.1 Théorique
 
 a0 = 0.9;
@@ -87,7 +87,7 @@ xlabel('\alpha')
 ylabel('\pi_{théorique}')
 legend('a1=1.2','a1=1.5','a1=2')
 
-%3.2 Pratique
+% 3.2 Pratique
 N = 20;
 K = 50000;
 a0 = 0.9;
@@ -101,6 +101,30 @@ xlabel('\alpha')
 ylabel('\pi')
 legend('Estimée','Théorique')
 
+% --- 4. Analyse d'un fichier de données --- %
+
+figure('Name',"4. Analyse d'un fichier de données")
+load('wind.mat')
+plot(test)
+title('Données de wind.mat')
+xlabel('N éléments')
+ylabel('Vitesse du vent (m/s)')
+
+estimateurs = wblfit(test);
+
+%plot(wblcdf(sort(test),estimateurs(1),estimateurs(2)))
+Ntest = length(test);
+
+x = sort(test).';
+cdfEmpirique = 1/Ntest*sum(test <= x);
+cdfthe = wblcdf(sort(test),estimateurs(1), estimateurs(2));
+plot(sort(test),cdfEmpirique,sort(test),cdfthe)
+title('Fonctions de répartitions des données de wind.mat')
+xlabel('Vitesse du vent (m/s)')
+ylabel('F(x)')
+legend('Théorique','Empirique')
+
+% ----------------------------* Fonctions *---------------------------- %
 
 function Y = generer(theta,param,N,K)
     % Renvoie Y de taille N x K. K réalisations de N éléments de loi de
