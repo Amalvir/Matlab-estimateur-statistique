@@ -70,7 +70,7 @@ for N=[10,20,50]
     plot(alpha, p)
 end
 hold off
-title('Puissance théorique du test avec différentes valeurs de N')
+title('C.O.R théorique avec différentes valeurs de N')
 xlabel('\alpha')
 ylabel('\pi_{théorique}')
 legend('N=10','N=20','N=50')
@@ -82,7 +82,7 @@ for a1=[1.2,1.5,2]
     plot(alpha, p)
 end
 hold off
-title('Puissance théorique du test avec différentes valeurs de a1')
+title('C.O.R théorique avec différentes valeurs de a1')
 xlabel('\alpha')
 ylabel('\pi_{théorique}')
 legend('a1=1.2','a1=1.5','a1=2')
@@ -93,10 +93,10 @@ K = 50000;
 a0 = 0.9;
 a1 = 1.5;
 figure('Name','3.2 Pratique')
-p_estim = pi_estimee(a0,a1,param,N,K,alpha);
-p_th = pi_theorique(a0,a1,2*N,alpha);
+p_estim = pi_estimee(a0, a1, N, K, alpha);
+p_th = pi_theorique(a0, a1, 2*N, alpha);
 plot(alpha, p_estim, alpha, p_th)
-title('Comparaison entre puissance estimée et théorique')
+title('Comparaison C.O.R entre puissance estimée et théorique')
 xlabel('\alpha')
 ylabel('\pi')
 legend('Estimée','Théorique')
@@ -110,23 +110,26 @@ title('Données de wind.mat')
 xlabel('N éléments')
 ylabel('Vitesse du vent (m/s)')
 
-estimateurs = wblfit(test);
-
-%plot(wblcdf(sort(test),estimateurs(1),estimateurs(2)))
+estimHat = wblfit(test); % estimHat = [theta, p]
 Ntest = length(test);
-
 x = sort(test);
 cdfEmpirique = 1/Ntest*sum(test <= x.');
-cdfthe = wblcdf(x,estimateurs(1), estimateurs(2));
+cdfthe = wblcdf(x, estimHat(1), estimHat(2));
+
+figure('Name',"4. Analyse d'un fichier de données")
 plot(sort(test),cdfEmpirique,sort(test),cdfthe)
 title('Fonctions de répartitions des données de wind.mat')
 xlabel('Vitesse du vent (m/s)')
 ylabel('F(x)')
 legend('Théorique','Empirique')
 
-[ePlus, eMoins] = ecart(x,Ntest,estimateurs);
+% Test de Kolmogorov
+
+[ePlus, eMoins] = ecart(x,Ntest,estimHat);
 ksstatEmpir = max(max(ePlus,eMoins)); 
 [h,pvaleur,ksstatThe] = kstest(x,'CDF',[x,cdfthe]);
+fprintf("KS test methode E+ et E- : %d\n", ksstatEmpir)
+fprintf("KS test fonction kstest : %d\n", ksstatThe)
 
 % ----------------------------* Fonctions *---------------------------- %
 
@@ -157,23 +160,22 @@ function p = pi_theorique(a0, a1, L, alpha)
     % Renvoie la puissance théorique p du test pour alpha en fonction de
     % a0,a1 et L.
     
-    lambda = a0/2*chi2inv(1-alpha,L);
-    p = 1 - chi2cdf(2*lambda/a1,L);
+    lambda = a0/2*chi2inv(1-alpha, L);
+    p = 1 - chi2cdf(2*lambda/a1, L);
 end
 
-function T = generer_H1(a1,param,N,K)
+function T = generer_H1(a1,N,K)
     % Génère K réalisations de longueur N associés à l'hypothèse H1
     
-    theta = a1^(1/param);
-    T = generer(theta,param,N,K);
+    T = a1/2.*chi2rnd(2,N,K);
 end
 
-function p = pi_estimee(a0,a1,param,N,K,alpha)
+function p = pi_estimee(a0,a1,N,K,alpha)
     % % Renvoie la puissance estimée p du test pour alpha en fonction de
     % a0, a1, param, N et K.
     
     lambda = a0/2*chi2inv(1-alpha,2*N);
-    Y = generer_H1(a1,param,N,K);
+    Y = generer_H1(a1,N,K);
     T = sum(Y);
     R = zeros(K,length(alpha));
     for i=1:K
@@ -184,11 +186,15 @@ function p = pi_estimee(a0,a1,param,N,K,alpha)
     p = mean(R); % Moyenne des K séries
 end
 
-function [ePlus, eMoins] = ecart(arrayY, Ntest, estimateurs)
-    ePlus = zeros(Ntest,1);
-    eMoins = zeros(Ntest,1);
-    for i=1:Ntest
-        ePlus(i) = abs(i/Ntest - wblcdf(arrayY(i),estimateurs(1), estimateurs(2)));
-        eMoins(i) = abs((i-1)/Ntest - wblcdf(arrayY(i),estimateurs(1), estimateurs(2)));
+function [ePlus, eMoins] = ecart(arrayY, Narray, estimHat)
+    % Renvoie les écarts E+ et E- permettant de calculer la statistique de 
+    % test de Kolmogorov en fonction des données arrayY du test, du nombre
+    % de valeur Narray et des paramètres estimHat.
+    
+    ePlus = zeros(Narray,1);
+    eMoins = zeros(Narray,1);
+    for i=1:Narray
+        ePlus(i) = abs(i/Narray - wblcdf(arrayY(i),estimHat(1), estimHat(2)));
+        eMoins(i) = abs((i-1)/Narray - wblcdf(arrayY(i),estimHat(1), estimHat(2)));
     end
 end
