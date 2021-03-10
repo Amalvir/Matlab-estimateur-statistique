@@ -115,14 +115,18 @@ estimateurs = wblfit(test);
 %plot(wblcdf(sort(test),estimateurs(1),estimateurs(2)))
 Ntest = length(test);
 
-x = sort(test).';
-cdfEmpirique = 1/Ntest*sum(test <= x);
-cdfthe = wblcdf(sort(test),estimateurs(1), estimateurs(2));
+x = sort(test);
+cdfEmpirique = 1/Ntest*sum(test <= x.');
+cdfthe = wblcdf(x,estimateurs(1), estimateurs(2));
 plot(sort(test),cdfEmpirique,sort(test),cdfthe)
 title('Fonctions de répartitions des données de wind.mat')
 xlabel('Vitesse du vent (m/s)')
 ylabel('F(x)')
 legend('Théorique','Empirique')
+
+[ePlus, eMoins] = ecart(x,Ntest,estimateurs);
+ksstatEmpir = max(max(ePlus,eMoins)); 
+[h,pvaleur,ksstatThe] = kstest(x,'CDF',[x,cdfthe]);
 
 % ----------------------------* Fonctions *---------------------------- %
 
@@ -178,4 +182,13 @@ function p = pi_estimee(a0,a1,param,N,K,alpha)
         end
     end
     p = mean(R); % Moyenne des K séries
+end
+
+function [ePlus, eMoins] = ecart(arrayY, Ntest, estimateurs)
+    ePlus = zeros(Ntest,1);
+    eMoins = zeros(Ntest,1);
+    for i=1:Ntest
+        ePlus(i) = abs(i/Ntest - wblcdf(arrayY(i),estimateurs(1), estimateurs(2)));
+        eMoins(i) = abs((i-1)/Ntest - wblcdf(arrayY(i),estimateurs(1), estimateurs(2)));
+    end
 end
